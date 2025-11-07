@@ -1,6 +1,7 @@
 # telbot
 
 **Barcode Checker Bot** - Telegram бот для проверки состава продуктов по штрих-кодам.
+https://t.me/insidecode_bot
 
 Функциональность:
 - Сканирование штрих-кодов с фото
