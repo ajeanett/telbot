@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	services.StartHealthServer() 
 	// Загрузка конфигурации
 	cfg := config.Load()
 
