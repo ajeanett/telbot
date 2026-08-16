@@ -1,38 +1,33 @@
 package models
 
-import "encoding/json"
-
+// Product — доменная модель продукта. Не зависит от контрактов внешних API:
+// маппинг JSON выполняют провайдеры через собственные приватные DTO.
 type Product struct {
-	Barcode     string       `json:"code"`
-	Name        string       `json:"product_name"`
-	Brand       string       `json:"brands"`
-	Ingredients []Ingredient `json:"ingredients"`
-	Composition string       `json:"ingredients_text"`
-	ImageURL    string       `json:"image_url"`
-	Additives   []string     `json:"additives_tags"`
-	Allergens   string       `json:"allergens"`
+	Barcode        string
+	Name           string
+	Brand          string
+	Country        string // страна происхождения
+	Composition    string // текст состава
+	Ingredients    []Ingredient
+	Additives      []string // теги OFF вида "en:e471"
+	Allergens      string   // теги OFF вида "en:gluten,en:milk"
+	ImageURL       string
+	SourceName     string // «Роскачество» / «Open Food Facts»
+	SourceURL      string // карточка товара на сайте источника
+	Rating         int    // 0–5; 0 = рейтинга нет
+	HasQualityMark bool
 }
 
+// Ingredient — ингредиент из структурированного списка.
 type Ingredient struct {
-	ID         string      `json:"id"`
-	Text       string      `json:"text"`
-	Percent    json.Number `json:"percent"`
-	PercentMin json.Number `json:"percent_min"`
-	PercentMax json.Number `json:"percent_max"`
-	Vegan      string      `json:"vegan"`
-	Vegetarian string      `json:"vegetarian"`
+	Text string
 }
 
-// Структура для ответа API
-type APIResponse struct {
-	Status  int     `json:"status"`
-	Product Product `json:"product"`
-}
-
-// Результат анализа продукта
+// AnalysisResult — результат анализа продукта.
 type AnalysisResult struct {
 	Product         *Product
 	Healthy         bool
+	Allergens       []string // найденные группы аллергенов
 	Warnings        []string
 	Dangerous       []string
 	Recommendations []string

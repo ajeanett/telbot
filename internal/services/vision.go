@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strconv"
 
 	vision "cloud.google.com/go/vision/apiv1"
 	"cloud.google.com/go/vision/v2/apiv1/visionpb"
+	"github.com/ajeanett/telbot/internal/utils"
 )
 
 var barCodeRegExp = regexp.MustCompile(`\b\d{8,13}\b`)
@@ -87,61 +87,11 @@ func extractBarcodeFromText(text string) string {
 	matches := barCodeRegExp.FindAllString(text, -1)
 
 	for _, match := range matches {
-		if IsValidBarcode(match) {
+		if utils.IsValidBarcode(match) {
 			return match
 		}
 	}
 	return ""
-}
-
-// isValidBarcode проверяет валидность штрих-кода
-func IsValidBarcode(barcode string) bool {
-	// Проверяем базовые условия
-	if len(barcode) < 8 || len(barcode) > 13 {
-		return false
-	}
-
-	// Проверяем что это только цифры
-	matched, _ := regexp.MatchString(`^\d+$`, barcode)
-	if !matched {
-		return false
-	}
-
-	// Дополнительная проверка контрольной суммы для EAN-13
-	if len(barcode) == 13 {
-		return validateEAN13(barcode)
-	}
-
-	// TODO: для других форматов можно добавить дополнительные проверки
-	return true
-}
-
-// validateEAN13 проверяет контрольную сумму EAN-13
-func validateEAN13(barcode string) bool {
-	if len(barcode) != 13 {
-		return false
-	}
-
-	sum := 0
-	for i, char := range barcode[:12] {
-		digit, err := strconv.Atoi(string(char))
-		if err != nil {
-			return false
-		}
-		if i%2 == 0 {
-			sum += digit * 1
-		} else {
-			sum += digit * 3
-		}
-	}
-
-	checkDigit, err := strconv.Atoi(string(barcode[12]))
-	if err != nil {
-		return false
-	}
-	calculatedCheckDigit := (10 - (sum % 10)) % 10
-
-	return checkDigit == calculatedCheckDigit
 }
 
 func (s *VisionService) Close() error {

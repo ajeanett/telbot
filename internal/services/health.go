@@ -12,7 +12,7 @@ func StartHealthServer() {
             w.Write([]byte("🤖 Bot is alive!"))
         })
         
-        // Replit использует порт из env переменной
+        // Порт берётся из env-переменной (для хостинг-платформ)
         port := os.Getenv("PORT")
         if port == "" {
             port = "8080"
