@@ -13,7 +13,9 @@ import (
 )
 
 func main() {
-	services.StartHealthServer() 
+	// Запускаем health-check сервер
+	services.StartHealthServer()
+
 	// Загрузка конфигурации
 	cfg := config.Load()
 
@@ -21,31 +23,39 @@ func main() {
 		log.Fatal("TELEGRAM_BOT_TOKEN не установлен")
 	}
 
-	// Инициализация сервисов
-	barcodeService := services.NewBarcodeService(cfg.OpenFoodFactsAPI)
+	// Инициализация провайдеров продуктов.
+	// Порядок важен: Роскачество первым (лучшие данные по РФ), OFF — фолбэк.
+	roskachestvo := services.NewRoskachestvoProvider(cfg.RskrfAPI)
+	openFoodFacts := services.NewOpenFoodFactsProvider(cfg.OpenFoodFactsAPI)
+	productProvider := services.NewMultiProductProvider(roskachestvo, openFoodFacts)
+
+	// Инициализация детекторов штрих-кодов
+	gozxingDetector := services.NewGozxingBarcodeDetector()
+
+	// Мульти-детектор
+	barcodeDetector := services.NewMultiBarcodeDetector(gozxingDetector)
+
+	// Инициализация анализатора
 	analyzer := services.NewAnalyzer()
-	barcodeDetector := services.NewBarcodeDetector()
 
 	// Создание бота
-	bot, err := bot.NewBot(cfg.TelegramToken, barcodeService, analyzer, barcodeDetector)
+	b, err := bot.NewBot(cfg.TelegramToken, productProvider, analyzer, barcodeDetector)
 	if err != nil {
 		log.Fatalf("Ошибка создания бота: %v", err)
 	}
-	defer bot.Close() // Закрываем ресурсы при завершении
-	log.Printf("Бот авторизован: %s", bot.Api().Self.UserName)
+	defer b.Close()
 
-	// Канал для graceful shutdown
+	log.Printf("🤖 Бот авторизован: %s", b.Api().Self.UserName)
+
+	// --- Graceful shutdown ---
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	// Запускаем бота в горутине
-	go func() {
-		log.Printf("Бот запущен: %s", bot.Api().Self.UserName)
+	log.Println("🚀 Бот запущен. Ожидание сообщений...")
 
-		// Запуск бота
-		bot.Start()
-	}()
+	go b.Start()
+
 	<-stop
 	log.Println("🛑 Получен сигнал остановки...")
-	log.Println("👋 Завершаем работу бота")
+	log.Println("👋 Завершение работы...")
 }
